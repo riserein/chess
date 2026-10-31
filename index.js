@@ -2,10 +2,13 @@ import {Chess} from './chess-core.js';
 import {GameSession,workerSearch} from './game.js';
 import {ChessPanel} from './panel.js';
 import {contextKey,createSpeaker} from './character.js';
+import {ApiStore,API_PRESETS,listModels,testConnection} from './api.js';
 
 const PREFIX='rose-chess:1:';
 let panel,session,currentKey=null,unsub=null,interval=null;
 const getContext=()=>window.SillyTavern?.getContext?.();
+const apiStore=new ApiStore();
+const apiClient={get:()=>apiStore.get(),save:data=>apiStore.save(data),forget:()=>apiStore.forget(),presets:API_PRESETS,listModels,test:testConnection};
 function read(key){try{return JSON.parse(localStorage.getItem(PREFIX+key)||'null');}catch{return null;}}
 function globalSettings(){return getContext()?.extensionSettings?.roseChess||{};}
 function save(key,state,settings){
@@ -19,7 +22,7 @@ function sync(force=false,imported=null){
  session?.dispose();currentKey=key;
  let saved=imported?{state:imported,settings:{...imported.settings,api:false}}:read(key||'practice');
  const name=key?(ctx.characters[ctx.characterId]?.name||'对手'):'练习对手';
- const opts={state:saved?.state,settings:{...globalSettings(),...saved?.settings},save:(state,settings)=>save(key||'practice',state,settings),search:workerSearch,speak:key?createSpeaker(getContext,key):undefined,changed:()=>panel?.render()};
+ const opts={state:saved?.state,settings:{...globalSettings(),...saved?.settings},save:(state,settings)=>save(key||'practice',state,settings),search:workerSearch,speak:key?createSpeaker(getContext,key,()=>apiStore.get()):undefined,changed:()=>panel?.render()};
  try{session=new GameSession(opts);}catch{session=new GameSession({...opts,state:null});}
  if(!key)session.settings.api=false;
  if(panel){panel.setSession(session,name);if(!key)panel.warning='当前是本地练习；打开单个角色聊天后，可以与该角色对弈。群聊暂不支持角色发言。';panel.render();}
@@ -29,7 +32,7 @@ async function boot(){
  if(document.getElementById('rose-chess-host'))return;
  const cssResponse=await fetch(new URL('./panel.css',import.meta.url));if(!cssResponse.ok)throw Error('无法读取棋盘样式文件');
  const css=(await cssResponse.text()).replaceAll('__BOTANICAL_URL__',new URL('./assets/botanical.svg',import.meta.url).href);sync(true);
- panel=new ChessPanel(css,{session,name:currentKey?(getContext()?.characters?.[getContext()?.characterId]?.name||'对手'):'练习对手',onOpen:()=>{sync();void session.respond();}});
+ panel=new ChessPanel(css,{session,apiClient,name:currentKey?(getContext()?.characters?.[getContext()?.characterId]?.name||'对手'):'练习对手',onOpen:()=>{sync();void session.respond();}});
  panel.onImport=data=>{Chess.fromState(data.game);sync(true,data);session.emit();};
  const ctx=getContext();
  if(ctx?.eventSource&&ctx?.eventTypes?.CHAT_CHANGED){const handler=()=>sync();ctx.eventSource.on(ctx.eventTypes.CHAT_CHANGED,handler);unsub=()=>ctx.eventSource.removeListener?.(ctx.eventTypes.CHAT_CHANGED,handler);}

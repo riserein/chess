@@ -5,7 +5,7 @@
   "optional": [],
   "js": "index.js",
   "author": "rise & OpenAI",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "minimum_client_version": "1.13.0",
   "auto_update": false,
   "homePage": "https://github.com/riserein/chess",
