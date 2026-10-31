@@ -1,0 +1,13 @@
+{
+  "display_name": "玫瑰棋局 · Rose Chess",
+  "loading_order": 100,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "author": "rise & OpenAI",
+  "version": "1.0.0",
+  "minimum_client_version": "1.13.0",
+  "auto_update": false,
+  "homePage": "https://github.com/riserein/chess",
+  "hooks": {"disable":"onDisable","delete":"onDisable","enable":"onEnable"}
+}
